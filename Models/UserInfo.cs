@@ -1,6 +1,6 @@
 namespace MealPlannerBackend.Models
 {
-    public partial class User{
+    public partial class UserInfo{
         public int Id { get; set; }
         public string  Email { get; set; } = "";
         public string FirstName { get; set; } = "";

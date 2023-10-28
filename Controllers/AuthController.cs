@@ -26,10 +26,18 @@ namespace MealPlannerBackend.Controllers{
         
         private readonly DatabaseContext _dapper;
         private readonly AuthHelper _authHelper;
+
         
         public AuthController(IConfiguration config){
             _dapper = new DatabaseContext(config);
             _authHelper = new AuthHelper(config);
+
+        }
+
+        [AllowAnonymous]
+        [HttpPost("TestConnection")]
+        public DateTime TestConnection(){
+            return _dapper.LoadDataSingle<DateTime>("SELECT GETDATE()");
         }
 
         [AllowAnonymous]
@@ -45,7 +53,20 @@ namespace MealPlannerBackend.Controllers{
                         Password = user.Password
                     };
                     if(_authHelper.SetPassword(setPassword)){
-                        return Ok();
+
+                        sql = @"EXEC MealPlanning.spUserInfoUpsert
+                            @Email = @EmailParam,
+                            @FirstName = @FirstNameParam,
+                            @LastName = @LastNameParam";
+                        DynamicParameters sqlParams = new DynamicParameters();
+
+                        sqlParams.Add("@EmailParam", user.Email, DbType.String);
+                        sqlParams.Add("@FirstNameParam", user.FirstName, DbType.String);
+                        sqlParams.Add("@LastNameParam", user.LastName, DbType.String);
+                        if(_dapper.ExecuteSqlWithParameters(sql,sqlParams)){
+                            return Ok();
+                        }
+                        throw new Exception("Failed to add user");
                     }
                     throw new Exception("Failed to register user.");
                 }
@@ -54,10 +75,52 @@ namespace MealPlannerBackend.Controllers{
             throw new Exception("Passwords do not match");
         }
 
-        [AllowAnonymous]
-        [HttpPost("TestConnection")]
-        public DateTime TestConnection(){
-            return _dapper.LoadDataSingle<DateTime>("SELECT GETDATE()");
+        [HttpPut("ResetPassword")]
+        public IActionResult ResetPassword(UserForLoginDto user){
+
+            if(_authHelper.SetPassword(user)){
+                return Ok();
+            }
+            throw new Exception("Failed to updated password");
         }
+
+        [AllowAnonymous]
+        [HttpPost("Login")]
+        public IActionResult Login(UserForLoginDto user){
+            string sql = @"EXEC MealPlanning.spLoginConfirmGet
+                @Email = @EmailParam";
+            DynamicParameters sqlParams = new DynamicParameters();
+
+            sqlParams.Add("@EmailParam", user.Email, DbType.String);
+
+            UserForLoginConfirmDto userForConfirm = _dapper.LoadDataSingleWithParameters<UserForLoginConfirmDto>(sql,sqlParams);
+
+            byte[] passHash = _authHelper.GetPasswordHash(user.Password,userForConfirm.PasswordSalt);
+
+            for(int i=0; i<passHash.Length; i++){
+                if(passHash[i]!= userForConfirm.PasswordHash[i]){
+                    return StatusCode(401, "Incorrect password");
+                }
+            }
+
+            string IdSql = @"SELECT Id from MealPlanning.UserInfo WHERE Email = '"+user.Email+"'";
+
+            int userId = _dapper.LoadDataSingle<int>(IdSql);
+
+            return Ok(new Dictionary<string,string> {
+                {"token", _authHelper.CreateToken(userId)}
+            });
+
+        }
+
+        [HttpGet("RefreshToken")]
+        public string RefreshToken(){
+            string sql = @"SELECT Id FROM MealPlanning.UserInfo WHERE Id = '"+ User.FindFirst("Id")?.Value + "'";
+
+            int userId = _dapper.LoadDataSingle<int>(sql);
+            return _authHelper.CreateToken(userId);
+            
+        }
+
     }
 }

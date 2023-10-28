@@ -77,14 +77,13 @@ namespace MealPlannerBackend.Helpers{
 
             byte[] hash = GetPasswordHash(user.Password, salt);
 
-            string sql = @"INSERT INTO MealPlanning.UserAuth(
-                            EMAIL,
-                            PasswordHash,
-                            PasswordSalt) Values ( '"+
-                            user.Email + "',"@hash = @hashParam, @salt=@saltParam)"" ;
+            string sql = @"EXEC MealPlanning.spReg_Upsert
+                @Email = @EmailParam,
+                @PassHash = @hashParam,
+                @PassSalt = @saltParam";
 
             DynamicParameters sqlParams = new DynamicParameters();
-
+            sqlParams.Add("@EmailParam", user.Email, DbType.String);
             sqlParams.Add("hashParam", hash, DbType.Binary);
             sqlParams.Add("saltParam", salt, DbType.Binary);
 
