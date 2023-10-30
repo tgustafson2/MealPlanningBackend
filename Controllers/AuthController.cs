@@ -115,7 +115,7 @@ namespace MealPlannerBackend.Controllers{
 
         [HttpGet("RefreshToken")]
         public string RefreshToken(){
-            string sql = @"SELECT Id FROM MealPlanning.UserInfo WHERE Id = '"+ User.FindFirst("Id")?.Value + "'";
+            string sql = @"SELECT Id FROM MealPlanning.UserInfo WHERE Id = '"+ User.FindFirst("userId")?.Value + "'";
 
             int userId = _dapper.LoadDataSingle<int>(sql);
             return _authHelper.CreateToken(userId);
