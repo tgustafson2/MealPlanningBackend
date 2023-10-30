@@ -71,13 +71,13 @@ namespace MealPlannerBackend.Controllers{
             return _dapper.LoadDataWithParameters<Recipe>(sql, sqlParams);
         }
         [HttpGet("GetRecipes/{RecipeId}")]
-        public Recipe GetRecipe(int id){
+        public Recipe GetRecipe(int RecipeId){
             string sql = @"EXEC MealPlanning.spRecipeGet
                         @UserId = @UserIdParam,
                         @Id = @IdParam";
             DynamicParameters sqlParams = new DynamicParameters();
             sqlParams.Add("@UserIdParam", this.User.FindFirst("userId")?.Value, DbType.Int32);
-            sqlParams.Add("@IdParam", id, DbType.Int32);
+            sqlParams.Add("@IdParam", RecipeId, DbType.Int32);
             return _dapper.LoadDataSingleWithParameters<Recipe>(sql,sqlParams);
         }
         [HttpDelete("Recipe/{recipeId}")]
