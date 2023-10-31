@@ -52,5 +52,18 @@ namespace MealPlannerBackend.Controllers{
             }
             throw new Exception("Failed to delete meal");
         }
+
+        [HttpGet("GetMeals/{StartDate}/{EndDate}")]
+        public IEnumerable<Meal> GetMeals(DateTime StartDate, DateTime EndDate){
+            string sql = @"EXEC MealPlanning.spMealChoiceGet
+                @UserId = @UserIdParam,
+                @Start = @StartParam,
+                @End = @EndParam";
+            DynamicParameters sqlParams = new DynamicParameters();
+            sqlParams.Add("@UserIdParam", this.User.FindFirst("userId")?.Value, DbType.Int32);
+            sqlParams.Add("StartParam", StartDate, DbType.DateTime);
+            sqlParams.Add("EndParam", EndDate, DbType.DateTime);
+            return _dapper.LoadDataWithParameters<Meal>(sql,sqlParams);
+        }
     }
 }
