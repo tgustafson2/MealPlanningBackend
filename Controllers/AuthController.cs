@@ -43,6 +43,9 @@ namespace MealPlannerBackend.Controllers{
         [AllowAnonymous]
         [HttpPost("Register")]
         public IActionResult Register(UserForRegDto user){
+            if (!_authHelper.CheckIfValid(user.Email)){
+                throw new Exception("Invalid Email");
+            }
             if (user.Password == user.PasswordConfirm){
                 string sql = "SELECT Email from MealPlanning.UserAuth WHERE Email = '"+
                     user.Email+"'";

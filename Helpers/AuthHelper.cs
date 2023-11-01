@@ -10,6 +10,8 @@ using MealPlannerBackend.Dtos;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
+using GemBox.Email;
+using GemBox.Email.Smtp;
 
 namespace MealPlannerBackend.Helpers{
 
@@ -24,7 +26,7 @@ namespace MealPlannerBackend.Helpers{
         }
 
         public byte[] GetPasswordHash(string password, byte[] salt){
-            string  saltPlusString = _config.GetSection("Appsettings:PasswordKey").Value + Convert.ToBase64String(salt);
+            string  saltPlusString = _config.GetSection("AppSettings:PasswordKey").Value + Convert.ToBase64String(salt);
 
             return KeyDerivation.Pbkdf2(
                 password: password,
@@ -88,6 +90,13 @@ namespace MealPlannerBackend.Helpers{
             sqlParams.Add("saltParam", salt, DbType.Binary);
 
             return _dapper.ExecuteSqlWithParameters(sql, sqlParams);
+        }
+        public bool CheckIfValid(string email){
+            string license = _config.GetSection("AppSettings:GemBoxLicense").Value;
+            ComponentInfo.SetLicense(license);
+            
+            MailAddressValidationResult result = MailAddressValidator.Validate(email);
+            return result.Status.ToString() =="Ok";
         }
     }
 }
